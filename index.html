@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Suivi Présence</title>
+    <style>
+        /* Design épuré et adapté aux doigts sur iPhone */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            max-width: 450px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background-color: #f2f2f7; 
+            color: #1c1c1e;
+        }
+        h2 { 
+            text-align: center; 
+            margin-top: 20px;
+            color: #000;
+        }
+        form { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 24px;
+        }
+        input, select, button { 
+            padding: 14px; 
+            font-size: 16px; 
+            border: 1px solid #d1d1d6; 
+            border-radius: 8px;
+            background-color: #fff;
+            -webkit-appearance: none; /* Reset style iOS */
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #007aff;
+        }
+        button { 
+            background-color: #007aff; 
+            color: white; 
+            border: none; 
+            font-weight: 600; 
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:active { 
+            background-color: #0056b3; 
+        }
+        ul { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0;
+        }
+        li { 
+            padding: 14px; 
+            background: white; 
+            margin-bottom: 8px; 
+            border-radius: 10px; 
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        .status {
+            font-weight: 600; 
+            padding: 4px 10px; 
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .present { color: #34c759; background: #e8f9ec; }
+        .absent { color: #ff3b30; background: #ffebeb; }
+        .loading { text-align: center; color: #8e8e93; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <h2>📍 Liste de Présence</h2>
+
+    <form id="presenceForm">
+        <input type="text" id="nameInput" placeholder="Nom de la personne" required>
+        <select id="statusInput">
+            <option value="Présent(e)">🟢 Présent(e)</option>
+            <option value="Absent(e)">🔴 Absent(e)</option>
+        </select>
+        <button type="submit" id="submitBtn">Ajouter</button>
+    </form>
+
+    <ul id="peopleList">
+        <li class="loading">Chargement des données...</li>
+    </ul>
+
+    <script>
+        // /!\ REMPLACE CETTE URL PAR TON URL GOOGLE APPS SCRIPT /!\
+        const googleScriptUrl = "https://script.google.com/macros/s/AKfycbxtCObOJDq0FNHhEVBKwS0-wLF9bZ1dfd-BJGnfXLkCyVItY7iQ8R7LzlFqym1Bsz6stA/exec";
+
+        const form = document.getElementById('presenceForm');
+        const nameInput = document.getElementById('nameInput');
+        const statusInput = document.getElementById('statusInput');
+        const peopleList = document.getElementById('peopleList');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // Charger les données depuis Google Sheets
+        async function loadData() {
+            try {
+                const response = await fetch(googleScriptUrl);
+                const data = await response.json();
+                
+                peopleList.innerHTML = '';
+                
+                if (!data || data.length === 0) {
+                    peopleList.innerHTML = '<li class="loading">Aucune présence pour le moment.</li>';
+                    return;
+                }
+
+                // On boucle sur les lignes (on suppose que Google Script renvoie un tableau de tableaux)
+                data.forEach(row => {
+                    if (row[0] && row[1]) { // row[0] = Nom, row[1] = Statut
+                        const li = document.createElement('li');
+                        const statusClass = row[1] === 'Présent(e)' ? 'present' : 'absent';
+                        
+                        li.innerHTML = `
+                            <span><strong>${row[0]}</strong></span>
+                            <span class="status ${statusClass}">${row[1]}</span>
+                        `;
+                        peopleList.appendChild(li);
+                    }
+                });
+            } catch (error) {
+                console.error("Erreur de chargement :", error);
+                peopleList.innerHTML = '<li class="loading" style="color:red;">Erreur de connexion au Sheet</li>';
+            }
+        }
+
+        // Envoyer une nouvelle personne au Google Sheet
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = nameInput.value.trim();
+            const status = statusInput.value;
+            
+            // Verrouillage du bouton pendant l'envoi
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Envoi...";
+
+            try {
+                // Envoi des données en POST au script Google
+                await fetch(googleScriptUrl, {
+                    method: "POST",
+                    mode: "no-cors", // Requis pour éviter les blocages CORS avec Google Apps Script
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name: name, status: status })
+                });
+
+                // Reset du formulaire et rechargement de la liste
+                nameInput.value = '';
+                await loadData();
+            } catch (error) {
+                console.error("Erreur d'envoi :", error);
+                alert("Erreur lors de l'ajout");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Ajouter";
+            }
+        });
+
+        // Charger les données dès l'ouverture de l'application
+        loadData();
+    </script>
+</body>
+</html>
