@@ -2,175 +2,244 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Suivi Présence</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suivi ETF & Actions Automatisé</title>
     <style>
-        /* Design épuré et adapté aux doigts sur iPhone */
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            max-width: 450px; 
-            margin: 0 auto; 
-            padding: 20px; 
-            background-color: #f2f2f7; 
-            color: #1c1c1e;
+        :root {
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
         }
-        h2 { 
-            text-align: center; 
-            margin-top: 20px;
-            color: #000;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
         }
-        form { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 12px; 
-            background: white;
-            padding: 16px;
+        .container {
+            background: var(--card-bg);
+            padding: 2rem;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            margin-bottom: 24px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            width: 100%;
+            max-width: 650px;
         }
-        input, select, button { 
-            padding: 14px; 
-            font-size: 16px; 
-            border: 1px solid #d1d1d6; 
-            border-radius: 8px;
-            background-color: #fff;
-            -webkit-appearance: none; /* Reset style iOS */
+        h1 {
+            font-size: 1.5rem;
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            text-align: center;
         }
-        input:focus, select:focus {
-            outline: none;
-            border-color: #007aff;
+        .subtitle {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 1.5rem;
         }
-        button { 
-            background-color: #007aff; 
-            color: white; 
-            border: none; 
-            font-weight: 600; 
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            font-family: monospace;
+            resize: vertical;
+            box-sizing: border-box;
+            background-color: #f1f5f9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            font-weight: 600;
+            color: #64748b;
+        }
+        .price {
+            font-weight: bold;
+            text-align: right;
+            color: #0f172a;
+        }
+        .btn-refresh {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: background-color 0.2s;
+            font-weight: 600;
         }
-        button:active { 
-            background-color: #0056b3; 
+        .btn-refresh:hover {
+            background-color: #1d4ed8;
         }
-        ul { 
-            list-style: none; 
-            padding: 0; 
-            margin: 0;
-        }
-        li { 
-            padding: 14px; 
-            background: white; 
-            margin-bottom: 8px; 
-            border-radius: 10px; 
-            box-shadow: 0 2px 6px rgba(0,0,0,0.02); 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
+        .btn-refresh:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
         }
         .status {
-            font-weight: 600; 
-            padding: 4px 10px; 
-            border-radius: 6px;
-            font-size: 14px;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            text-align: center;
+            font-weight: 500;
         }
-        .present { color: #34c759; background: #e8f9ec; }
-        .absent { color: #ff3b30; background: #ffebeb; }
-        .loading { text-align: center; color: #8e8e93; font-style: italic; }
     </style>
 </head>
 <body>
 
-    <h2>📍 Liste de Présence</h2>
+<div class="container">
+    <h1>Automatisation ISIN ➡️ Prix</h1>
+    <p class="subtitle">Colle tes codes ISIN ci-dessous (un par ligne) :</p>
+    
+    <textarea id="isin-input" spellcheck="false" placeholder="Exemples :&#10;FR0011871128&#10;FR0011550193&#10;FR0013412020"></textarea>
+    
+    <button id="run-btn" class="btn-refresh" onclick="processISINs()">Traduire & Chercher les prix</button>
+    <div id="status-msg" class="status"></div>
 
-    <form id="presenceForm">
-        <input type="text" id="nameInput" placeholder="Nom de la personne" required>
-        <select id="statusInput">
-            <option value="Présent(e)">🟢 Présent(e)</option>
-            <option value="Absent(e)">🔴 Absent(e)</option>
-        </select>
-        <button type="submit" id="submitBtn">Ajouter</button>
-    </form>
+    <table id="results-table" style="display: none;">
+        <thead>
+            <tr>
+                <th>ISIN / Ticker</th>
+                <th>Nom du produit</th>
+                <th class="price">Prix Actuel</th>
+            </tr>
+        </thead>
+        <tbody id="portfolio-body">
+            </tbody>
+    </table>
+</div>
 
-    <ul id="peopleList">
-        <li class="loading">Chargement des données...</li>
-    </ul>
+<script>
+    // Ajout des ISINs par défaut au chargement
+    document.getElementById('isin-input').value = "FR0011871128\nFR0011550193\nFR0013412020";
 
-    <script>
-        // /!\ REMPLACE CETTE URL PAR TON URL GOOGLE APPS SCRIPT /!\
-        const googleScriptUrl = "https://script.google.com/macros/s/AKfycbxtCObOJDq0FNHhEVBKwS0-wLF9bZ1dfd-BJGnfXLkCyVItY7iQ8R7LzlFqym1Bsz6stA/exec";
+    // Fonction utilitaire pour utiliser le proxy CORS
+    async function fetchWithProxy(url) {
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&t=${Date.now()}`;
+        const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error('Erreur réseau');
+        const data = await response.json();
+        return JSON.parse(data.contents);
+    }
 
-        const form = document.getElementById('presenceForm');
-        const nameInput = document.getElementById('nameInput');
-        const statusInput = document.getElementById('statusInput');
-        const peopleList = document.getElementById('peopleList');
-        const submitBtn = document.getElementById('submitBtn');
-
-        // Charger les données depuis Google Sheets
-        async function loadData() {
-            try {
-                const response = await fetch(googleScriptUrl);
-                const data = await response.json();
-                
-                peopleList.innerHTML = '';
-                
-                if (!data || data.length === 0) {
-                    peopleList.innerHTML = '<li class="loading">Aucune présence pour le moment.</li>';
-                    return;
-                }
-
-                // On boucle sur les lignes (on suppose que Google Script renvoie un tableau de tableaux)
-                data.forEach(row => {
-                    if (row[0] && row[1]) { // row[0] = Nom, row[1] = Statut
-                        const li = document.createElement('li');
-                        const statusClass = row[1] === 'Présent(e)' ? 'present' : 'absent';
-                        
-                        li.innerHTML = `
-                            <span><strong>${row[0]}</strong></span>
-                            <span class="status ${statusClass}">${row[1]}</span>
-                        `;
-                        peopleList.appendChild(li);
-                    }
-                });
-            } catch (error) {
-                console.error("Erreur de chargement :", error);
-                peopleList.innerHTML = '<li class="loading" style="color:red;">Erreur de connexion au Sheet</li>';
-            }
+    async function processISINs() {
+        const input = document.getElementById('isin-input').value;
+        const statusMsg = document.getElementById('status-msg');
+        const btn = document.getElementById('run-btn');
+        const table = document.getElementById('results-table');
+        const tbody = document.getElementById('portfolio-body');
+        
+        // 1. Extraction et nettoyage des codes ISIN
+        // On sépare par ligne, on retire les espaces, on met en majuscule, et on garde ceux qui font 12 caractères.
+        const isins = input.split('\n')
+                           .map(s => s.trim().toUpperCase())
+                           .filter(s => s.length === 12);
+        
+        if (isins.length === 0) {
+            statusMsg.style.color = '#dc2626';
+            statusMsg.textContent = "Aucun code ISIN valide détecté. (Un ISIN doit faire 12 caractères).";
+            return;
         }
 
-        // Envoyer une nouvelle personne au Google Sheet
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const name = nameInput.value.trim();
-            const status = statusInput.value;
-            
-            // Verrouillage du bouton pendant l'envoi
-            submitBtn.disabled = true;
-            submitBtn.innerText = "Envoi...";
+        // État de chargement
+        btn.disabled = true;
+        table.style.display = 'none';
+        tbody.innerHTML = '';
+        statusMsg.style.color = '#2563eb';
 
-            try {
-                // Envoi des données en POST au script Google
-                await fetch(googleScriptUrl, {
-                    method: "POST",
-                    mode: "no-cors", // Requis pour éviter les blocages CORS avec Google Apps Script
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ name: name, status: status })
-                });
-
-                // Reset du formulaire et rechargement de la liste
-                nameInput.value = '';
-                await loadData();
-            } catch (error) {
-                console.error("Erreur d'envoi :", error);
-                alert("Erreur lors de l'ajout");
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerText = "Ajouter";
+        try {
+            // 2. Traduction ISIN -> Ticker
+            statusMsg.textContent = "Étape 1/2 : Recherche des Tickers correspondants...";
+            const portfolio = [];
+            
+            for (const isin of isins) {
+                // Requête vers le moteur de recherche Yahoo Finance
+                const searchUrl = `https://query2.finance.yahoo.com/v1/finance/search?q=${isin}&newsCount=0`;
+                const searchData = await fetchWithProxy(searchUrl);
+                
+                if (searchData.quotes && searchData.quotes.length > 0) {
+                    const quote = searchData.quotes[0]; // On prend le premier résultat trouvé
+                    portfolio.push({
+                        isin: isin,
+                        ticker: quote.symbol,
+                        name: quote.shortname || quote.longname || "Nom inconnu"
+                    });
+                } else {
+                    portfolio.push({
+                        isin: isin,
+                        ticker: null,
+                        name: "Introuvable sur Yahoo"
+                    });
+                }
             }
-        });
 
-        // Charger les données dès l'ouverture de l'application
-        loadData();
-    </script>
+            // 3. Récupération des prix
+            statusMsg.textContent = "Étape 2/2 : Récupération des prix en direct...";
+            const validTickers = portfolio.filter(p => p.ticker).map(p => p.ticker).join(',');
+            let pricesData = { quoteResponse: { result: [] } };
+            
+            if (validTickers.length > 0) {
+                // Requête vers l'API des cours boursiers
+                const yfUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${validTickers}`;
+                pricesData = await fetchWithProxy(yfUrl);
+            }
+            
+            const quotes = pricesData.quoteResponse.result;
+
+            // 4. Construction et affichage du tableau
+            statusMsg.textContent = "";
+            table.style.display = 'table';
+            
+            tbody.innerHTML = portfolio.map(item => {
+                let priceDisplay = 'N/A';
+                
+                if (item.ticker) {
+                    const quote = quotes.find(q => q.symbol === item.ticker);
+                    if (quote && quote.regularMarketPrice) {
+                        // Formatage du prix selon la devise
+                        priceDisplay = new Intl.NumberFormat('fr-FR', { 
+                            style: 'currency', 
+                            currency: quote.currency || 'EUR' 
+                        }).format(quote.regularMarketPrice);
+                    }
+                }
+
+                return `
+                    <tr>
+                        <td>
+                            ${item.isin} <br>
+                            <small style="color:#94a3b8">${item.ticker || 'Aucun Ticker'}</small>
+                        </td>
+                        <td>${item.name}</td>
+                        <td class="price">${priceDisplay}</td>
+                    </tr>
+                `;
+            }).join('');
+
+        } catch (error) {
+            console.error('Erreur :', error);
+            statusMsg.style.color = '#dc2626';
+            statusMsg.textContent = "Une erreur est survenue lors de la communication avec l'API.";
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Traduire & Chercher les prix';
+        }
+    }
+</script>
 </body>
 </html>
